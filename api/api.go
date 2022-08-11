@@ -2,34 +2,22 @@ package api
 
 import (
 	"fmt"
-	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gofiber/fiber/v2"
 )
 
-func serveIndex(writer http.ResponseWriter, request *http.Request){
-	writer.Write([]byte("welcome, here will be a basic template"))
+func serveIndex(c *fiber.Ctx) error{
+	return c.SendString("Hello, World!")
 }
 
 
-func getImage(writer http.ResponseWriter, request *http.Request) {
-
-	animal  := chi.URLParam(request, "animal")
-	width  := chi.URLParam(request, "width")
-	height  := chi.URLParam(request, "height")
-
-	writer.Write([]byte(fmt.Sprintf("%s %s %s", animal, width, height)))
+func getImage(c *fiber.Ctx) error {
+	return c.SendString(fmt.Sprintf("%s %s %s", c.Params("animal"), c.Params("width"), c.Params("height")))
 }
 
 func StartServer() error {
-	router := chi.NewRouter()
-	router.Use(middleware.Logger)
-
-	router.Get("/", serveIndex)
-	router.Get("/{animal}/{width}/{height}", getImage)
-
-	err := http.ListenAndServe(":8080", router)
-
-	return err
+	app := fiber.New()
+	app.Get("/",  serveIndex)
+	app.Get("/:animal/:width/:height", getImage)
+	return app.Listen(":8080")
 }
