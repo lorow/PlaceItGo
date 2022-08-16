@@ -1,4 +1,4 @@
-package pkg
+package internal
 
 type ImageService interface {
 	GetImage(animal string, width, height int) ([]byte, error)

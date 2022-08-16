@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/lorow/placeitgo/pkg"
+	pkg "github.com/lorow/placeitgo/internal"
 	log "github.com/sirupsen/logrus"
 )
 
