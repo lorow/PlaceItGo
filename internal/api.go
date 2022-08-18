@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -25,11 +26,22 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	imageService := ImageManager{}
+	// this should be in context
+	config, config_err := GetConfig()
+	if config_err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	// this should be in context
+	redisCache := GetRedisCache(*config)
+	imageService := ImageManager{
+		redisCache,
+	}
 
 	imageData, err := imageService.GetImage(animal, width, height)
 
 	if err != nil {
+		log.Printf("Something went wrong while retrieving the image: %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
@@ -43,5 +55,9 @@ func StartServer() error {
 
 	router.Get("/", serveIndex)
 	router.Get("/{animal}/{width}/{height}", getImage)
-	return http.ListenAndServe(":8080", router)
+
+	port := ":8080"
+
+	log.Printf("Started serving on port http://localhost%s", port)
+	return http.ListenAndServe(port, router)
 }
