@@ -3,5 +3,12 @@
 # and commit this file to your remote git repository to share the goodness with others.
 
 tasks:
-  - init: go get && go build ./... && go test ./...
+  - name: redis
+    init: sudo apt-get update \
+        && sudo apt-get install -y redis-server \
+        && sudo rm -rf /var/lib/apt/lists/*
+    command: redis-server
+
+  - name: install go deps and run the project
+    init: gp sync-await bundle # wait for redis to start up
     command: go mod tidy && go run ./cmd
