@@ -1,9 +1,10 @@
 package internal
 
 import (
-	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -41,7 +42,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	imageData, err := imageService.GetImage(animal, width, height)
 
 	if err != nil {
-		log.Printf("Something went wrong while retrieving the image: %s", err.Error())
+		log.Error().Msgf("Something went wrong while retrieving the image: %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 

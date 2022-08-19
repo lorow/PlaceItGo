@@ -8,7 +8,7 @@ type ImageService interface {
 	GetImage(animal string, width, height int) ([]byte, error)
 }
 
-type ImageManager struct{
+type ImageManager struct {
 	redisCache *RedisCache
 }
 

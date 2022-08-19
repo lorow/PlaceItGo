@@ -1,25 +1,12 @@
 package main
 
 import (
-	"io"
-	"log"
-	"os"
-
 	pkg "github.com/lorow/placeitgo/internal"
+	"github.com/rs/zerolog"
 )
 
-func setupLogging() {
-	logFile, err := os.OpenFile("log.txt", os.O_CREATE | os.O_APPEND | os.O_RDWR, 0666)
-	if err != nil {
-			panic(err)
-	}
-	mw := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(mw)
-}
-
 func main() {
-	setupLogging()
-
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	server_err := pkg.StartServer()
 
 	if server_err != nil {
