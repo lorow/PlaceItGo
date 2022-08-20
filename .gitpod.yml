@@ -4,11 +4,10 @@
 
 tasks:
   - name: redis
-    init: sudo apt-get update \
-        && sudo apt-get install -y redis-server \
-        && sudo rm -rf /var/lib/apt/lists/*
+    init: sudo apt-get update && sudo apt-get install -y redis-server && sudo rm -rf /var/lib/apt/lists/* && go sync-done redis 
     command: redis-server
+    openMode: split-left
 
-  - name: install go deps and run the project
-    init: gp sync-await bundle # wait for redis to start up
+  - name: PlaceitGo
+    init: gp sync-await redis # wait for redis to start up
     command: go mod tidy && go run ./cmd
