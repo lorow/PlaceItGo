@@ -44,16 +44,28 @@ func (r RedisCache) GetImages(resolution string) ([][]byte, error) {
 	return [][]byte{[]byte(image)}, err
 }
 
-func GetRedisCache(cfg Config) *RedisCache {
+func testRedisConnection(rdb *redis.Client) error {
+	err := rdb.Set(ctx, "testConnection", 1, 0).Err()
+
+	if err == nil {
+		rdb.Del(ctx, "testConnection").Err()
+	}
+
+	return err
+}
+
+func GetRedisCache(cfg Config) (*RedisCache, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.redis_url,
 		Password: cfg.redis_password,
 		DB:       cfg.redis_database,
 	})
 
+	err := testRedisConnection(rdb)
+
 	redisCache := RedisCache{
 		db: rdb,
 	}
 
-	return &redisCache
+	return &redisCache, err
 }

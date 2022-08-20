@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -23,20 +24,22 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	width, width_err := strconv.Atoi(width_str)
 	height, height_err := strconv.Atoi(height_str)
 
+	ctx := r.Context()
+
 	if width_err != nil || height_err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	// this should be in context
-	config, config_err := GetConfig()
-	if config_err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	redisCache, ok := ctx.Value("redisCache").(*RedisCache)
+
+	if !ok {
+		http.Error(w, http.StatusText(422), 422)
+		return
 	}
 
-	// this should be in context
-	redisCache := GetRedisCache(*config)
 	imageService := ImageManager{
-		redisCache,
+		redisCache: redisCache,
 	}
 
 	imageData, err := imageService.GetImage(animal, width, height)
@@ -44,10 +47,31 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error().Msgf("Something went wrong while retrieving the image: %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Write(imageData)
+}
+
+func cacheContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		config, config_err := GetConfig()
+		if config_err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		redisCache, redisConnectionError := GetRedisCache(*config)
+
+		if redisConnectionError != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "redisCache", redisCache)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func StartServer() error {
@@ -55,7 +79,10 @@ func StartServer() error {
 	router.Use(middleware.Logger)
 
 	router.Get("/", serveIndex)
-	router.Get("/{animal}/{width}/{height}", getImage)
+	router.Route("/{animal}/{width}/{height}", func(r chi.Router) {
+		r.Use(cacheContext)
+		r.Get("/", getImage)
+	})
 
 	port := ":8080"
 
