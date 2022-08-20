@@ -3,8 +3,6 @@ package internal
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	"strings"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -21,27 +19,30 @@ type RedisCache struct {
 }
 
 func (r RedisCache) getImageKeys(resolution string) string {
-	keys := make([]string, 5)
+	keys := ""
 
-	for i := 0; i < len(keys); i++ {
-		keys[i] = fmt.Sprintf("%s_%d", resolution, i)
+	for i := range keys {
+		keys += fmt.Sprintf(" %s_%d", resolution, i)
 	}
 
-	return strings.Join(keys, " ")
+	return keys
 }
 
 func (r RedisCache) GetImages(resolution string) ([][]byte, error) {
 	keys := r.getImageKeys(resolution)
 
-	images, err := r.db.MGet(ctx, keys).Result()
+	cachedImages, err := r.db.MGet(ctx, keys).Result()
+	images := [][]byte{}
+
+	for _, image := range cachedImages {
+		images = append(images, []byte(fmt.Sprintf("%v", image)))
+	}
 
 	if err != nil {
 		return nil, err
 	}
-	randomIndex := rand.Intn(len(images))
-	image := fmt.Sprint(images[randomIndex])
 
-	return [][]byte{[]byte(image)}, err
+	return images, err
 }
 
 func testRedisConnection(rdb *redis.Client) error {

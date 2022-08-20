@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"math/rand"
 )
 
 type ImageService interface {
@@ -13,9 +14,11 @@ type ImageManager struct {
 }
 
 func (i ImageManager) GetImage(animal string, width, height int) ([]byte, error) {
-	// todo, try and see if it was reddis connection issue (maybe add a preflight check while getting redis?)
 	// todo, add getting images from reddit
 	// todo, add randomization to retrieved images
-	cahedImages, err := i.redisCache.GetImages(fmt.Sprintf("%s_%xx%x", animal, width, height))
-	return cahedImages[0], err
+	images, err := i.redisCache.GetImages(fmt.Sprintf("%s_%xx%x", animal, width, height))
+	randomIndex := rand.Intn(len(images))
+	image := images[randomIndex]
+
+	return image, err
 }
