@@ -51,7 +51,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Write(imageData)
+	w.Write(imageData.data)
 }
 
 func cacheContext(next http.Handler) http.Handler {

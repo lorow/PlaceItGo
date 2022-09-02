@@ -11,14 +11,29 @@ type ImageService interface {
 
 type ImageManager struct {
 	redisCache *RedisCache
+	redditService *RedditService
 }
 
-func (i ImageManager) GetImage(animal string, width, height int) ([]byte, error) {
-	// todo, add getting images from reddit
-	// todo, add randomization to retrieved images
-	images, err := i.redisCache.GetImages(fmt.Sprintf("%s_%xx%x", animal, width, height))
-	randomIndex := rand.Intn(len(images))
-	image := images[randomIndex]
+type RedditImage struct {
+	name string
+	data []byte
+}
 
-	return image, err
+
+func (i ImageManager) GetImage(animal string, width, height int) (RedditImage, error) {
+	// todo, add getting images from reddit
+	
+	images, err := i.redisCache.GetImages(fmt.Sprintf("%s_%xx%x", animal, width, height))
+	if err == nil || len(images) == 0{
+		randomIndex := rand.Intn(len(images))
+		return images[randomIndex], nil
+	}
+
+	image, err := i.redditService.GetImage(animal, width, height)
+	if err == nil {
+		i.redisCache.SaveImage(image.name, image.data)
+		return image, nil
+	} 
+
+	return RedditImage{} , err
 }

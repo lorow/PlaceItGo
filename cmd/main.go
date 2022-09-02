@@ -10,7 +10,7 @@ func main() {
 	server_err := pkg.StartServer()
 
 	if server_err != nil {
-		panic("couldn't start the API server up")
+		panic("couldn't start the API server up!")
 	}
 
 }

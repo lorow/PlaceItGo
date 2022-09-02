@@ -3,6 +3,8 @@ package internal
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -18,24 +20,32 @@ type RedisCache struct {
 	db *redis.Client
 }
 
-func (r RedisCache) getImageKeys(resolution string) string {
-	keys := ""
+func (r RedisCache) getImageKeys(resolution string) ([]string, error) {
+	var cursor uint64 // todo iterate over this
+	keys, _, err := r.db.Scan(ctx, cursor, fmt.Sprintf("%s*", resolution), 19).Result()
 
-	for i := range keys {
-		keys += fmt.Sprintf(" %s_%d", resolution, i)
-	}
-
-	return keys
+	return keys, err
 }
 
-func (r RedisCache) GetImages(resolution string) ([][]byte, error) {
-	keys := r.getImageKeys(resolution)
+func (r RedisCache) GetImages(resolution string) ([]RedditImage, error) {
+	keys, err := r.getImageKeys(resolution)
 
-	cachedImages, err := r.db.MGet(ctx, keys).Result()
-	images := [][]byte{}
+	if err != nil {
+		return []RedditImage{}, err
+	}
 
-	for _, image := range cachedImages {
-		images = append(images, []byte(fmt.Sprintf("%v", image)))
+	
+	cachedImages, err := r.db.MGet(ctx, strings.Join(keys, " ")).Result()
+	images := []RedditImage{}
+
+	for index, image := range cachedImages {
+		image_data, ok := image.([]byte)
+		if ok {
+			images = append(images, RedditImage{
+				data: image_data,
+				name: keys[index], 
+			})
+		}
 	}
 
 	if err != nil {
@@ -43,6 +53,11 @@ func (r RedisCache) GetImages(resolution string) ([][]byte, error) {
 	}
 
 	return images, err
+}
+
+func (r RedisCache) SaveImage(key string, data []byte) error {
+	_, err := r.db.Set(ctx, key, data, 24*time.Hour).Result()
+	return err
 }
 
 func testRedisConnection(rdb *redis.Client) error {
