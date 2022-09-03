@@ -34,7 +34,6 @@ func (r RedisCache) GetImages(resolution string) ([]RedditImage, error) {
 		return []RedditImage{}, err
 	}
 
-	
 	cachedImages, err := r.db.MGet(ctx, strings.Join(keys, " ")).Result()
 	images := []RedditImage{}
 
@@ -43,7 +42,7 @@ func (r RedisCache) GetImages(resolution string) ([]RedditImage, error) {
 		if ok {
 			images = append(images, RedditImage{
 				data: image_data,
-				name: keys[index], 
+				name: keys[index],
 			})
 		}
 	}

@@ -31,15 +31,11 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redisCache, ok := ctx.Value("redisCache").(*RedisCache)
+	imageService, ok := ctx.Value("imageService").(*ImageManager)
 
 	if !ok {
 		http.Error(w, http.StatusText(422), 422)
 		return
-	}
-
-	imageService := ImageManager{
-		redisCache: redisCache,
 	}
 
 	imageData, err := imageService.GetImage(animal, width, height)
@@ -54,7 +50,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData.data)
 }
 
-func cacheContext(next http.Handler) http.Handler {
+func imageServiceContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		config, config_err := GetConfig()
 		if config_err != nil {
@@ -69,7 +65,11 @@ func cacheContext(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "redisCache", redisCache)
+		imageService := ImageManager{
+			redisCache: redisCache,
+		}
+
+		ctx := context.WithValue(r.Context(), "imageService", imageService)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -80,7 +80,7 @@ func StartServer() error {
 
 	router.Get("/", serveIndex)
 	router.Route("/{animal}/{width}/{height}", func(r chi.Router) {
-		r.Use(cacheContext)
+		r.Use(imageServiceContext)
 		r.Get("/", getImage)
 	})
 
