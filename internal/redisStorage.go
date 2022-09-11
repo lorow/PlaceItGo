@@ -22,7 +22,7 @@ type RedisCache struct {
 
 func (r RedisCache) getImageKeys(resolution string) ([]string, error) {
 	var cursor uint64 // todo iterate over this
-	keys, _, err := r.db.Scan(ctx, cursor, fmt.Sprintf("%s*", resolution), 19).Result()
+	keys, _, err := r.db.Scan(ctx, cursor, fmt.Sprintf("*%s*", resolution), 19).Result()
 
 	return keys, err
 }
@@ -69,7 +69,7 @@ func testRedisConnection(rdb *redis.Client) error {
 	return err
 }
 
-func GetRedisCache(cfg Config) (*RedisCache, error) {
+func NewRedisCache(cfg Config) (*RedisCache, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.redis_url,
 		Password: cfg.redis_password,
