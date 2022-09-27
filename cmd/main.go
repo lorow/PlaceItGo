@@ -18,6 +18,8 @@ func main() {
 		fmt.Println("Couldn't connect to redis instance")
 	}
 
+	fmt.Println("Successfully connected to redis!")
+
 	redditService := pkg.NewRedditService()
 	imageService := pkg.ImageManager{
 		RedisCache:    redisCache,

@@ -71,9 +71,9 @@ func testRedisConnection(rdb *redis.Client) error {
 
 func NewRedisCache(cfg Config) (*RedisCache, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.redis_url,
-		Password: cfg.redis_password,
-		DB:       cfg.redis_database,
+		Addr:     cfg.RedisURL,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDatabase,
 	})
 
 	err := testRedisConnection(rdb)
