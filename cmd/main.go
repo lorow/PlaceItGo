@@ -13,14 +13,18 @@ func main() {
 		fmt.Println("Couldn't load config")
 	}
 
-	redisCache, redisConnectionError := pkg.NewRedisCache(*config)
+	redisCache, redisConnectionError := pkg.NewRedisCache(config)
 	if redisConnectionError != nil {
-		fmt.Println("Couldn't connect to redis instance")
+		fmt.Printf("Couldn't connect to redis instance - {%s} \n", redisConnectionError)
+	} else {
+		fmt.Println("Successfully connected to redis!")
 	}
 
-	fmt.Println("Successfully connected to redis!")
+	redditService, err := pkg.NewRedditService(config)
+	if err != nil {
+		panic(fmt.Sprintf("Could not start the reddit service %s", err))
+	}
 
-	redditService := pkg.NewRedditService()
 	imageService := pkg.ImageManager{
 		RedisCache:    redisCache,
 		RedditService: redditService,

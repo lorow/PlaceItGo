@@ -8,13 +8,14 @@ import (
 )
 
 type Config struct {
-	RedisURL       string `env:"redis_url"`
-	RedisDatabase  int    `env:"redis_databse"`
+	RedisURL       string `env:"redis_server"`
+	RedisDatabase  int    `env:"redis_db"`
+	RedisPort      int    `env:"redis_port"`
 	RedisPassword  string `env:"redis_password"`
 	RedditUsername string `env:"reddit_username"`
 	RedditPassword string `env:"reddit_password"`
-	RedditAppID    string `env:"reddit_app_id"`
-	RedditSecret   string `env:"reddit_secret"`
+	RedditAppID    string `env:"reddit_client_id"`
+	RedditSecret   string `env:"reddit_client_secret"`
 }
 
 func GetConfig() (*Config, error) {

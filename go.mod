@@ -6,6 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/rs/zerolog v1.27.0
+	github.com/thecsw/mira v1.1.2
 )
 
 require (
