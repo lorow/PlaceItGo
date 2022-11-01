@@ -10,6 +10,15 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+type ImageObject struct {
+	name string
+	data []byte
+}
+
+type ImageService interface {
+	GetImage(animal string, width, height int) (ImageObject, error)
+}
+
 type PlaceItGoHandler struct {
 	imageService ImageService
 }

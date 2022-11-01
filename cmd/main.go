@@ -15,19 +15,14 @@ func main() {
 
 	redisCache, redisConnectionError := pkg.NewRedisCache(config)
 	if redisConnectionError != nil {
-		fmt.Printf("Couldn't connect to redis instance - {%s} \n", redisConnectionError)
+		panic(fmt.Sprintf("Couldn't connect to redis instance - {%s} \n", redisConnectionError))
 	} else {
 		fmt.Println("Successfully connected to redis!")
 	}
 
-	redditService, err := pkg.NewRedditService(config)
+	imageService, err := pkg.NewRedditService(config, redisCache)
 	if err != nil {
 		panic(fmt.Sprintf("Could not start the reddit service %s", err))
-	}
-
-	imageService := pkg.ImageManager{
-		RedisCache:    redisCache,
-		RedditService: redditService,
 	}
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
