@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"math/rand"
 
 	"github.com/thecsw/mira"
 )
@@ -12,35 +11,40 @@ type RedditService struct {
 	cache *RedisCache
 }
 
-type redditImageEntry struct {
-	author    string
-	imageLink string
-	width     int
-	height    int
+type ImageEntry struct {
+	author string
+	title  string
+	link   string
+	width  int
+	height int
 }
 
-func (r RedditService) GetImage(animal string, width, height int) (ImageObject, error) {
+func (r RedditService) GetImage(animal string, width, height int) ([]byte, error) {
 	// todo, add getting images from reddit
-	images, err := r.cache.GetImages(fmt.Sprintf("%s_%xx%x", animal, width, height))
-	if err == nil && len(images) != 0 {
-		randomIndex := rand.Intn(len(images))
-		return images[randomIndex], nil
-	}
 
-	image, err := r.fetchImage(animal, width, height)
+	imageEntry, err := r.cache.GetImage(width, height, animal)
+
 	if err == nil {
-		r.cache.SaveImage(image.name, image.data)
-		return image, nil
+		// we got the iamge from cache, let's download it, process it, and return
+		freshImage, err := r.fetchImage(imageEntry)
+		if err != nil {
+			return []byte{},
+				err
+		}
+		processedImage := r.processImageEntry(imageEntry.author, imageEntry.title, freshImage)
+		return processedImage, nil
+	} else {
+		// something went wrong with getting the image from cache, possibly nothing found
+		// get it straight from reddit
+		return []byte{}, nil
 	}
-
-	return ImageObject{}, err
 }
 
-func (r RedditService) fetchImage(animal string, width, height int) (ImageObject, error) {
-	return ImageObject{}, nil
+func (r RedditService) fetchImage(entry ImageEntry) ([]byte, error) {
+	return []byte{}, nil
 }
 
-func (r RedditService) processImageEntry(entry redditImageEntry) []byte {
+func (r RedditService) processImageEntry(author, title string, data []byte) []byte {
 	return []byte{}
 }
 

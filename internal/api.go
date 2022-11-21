@@ -10,13 +10,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-type ImageObject struct {
-	name string
-	data []byte
-}
-
 type ImageService interface {
-	GetImage(animal string, width, height int) (ImageObject, error)
+	GetImage(animal string, width, height int) ([]byte, error)
 }
 
 type PlaceItGoHandler struct {
@@ -50,7 +45,7 @@ func (p PlaceItGoHandler) getImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Write(imageData.data)
+	w.Write(imageData)
 }
 
 func StartServer(imageManager ImageService) error {
