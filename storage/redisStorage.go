@@ -1,10 +1,12 @@
-package internal
+package storage
 
 import (
 	"context"
 	"fmt"
 	"hash/fnv"
 	"math/rand"
+	"placeitgo/config"
+	"placeitgo/utils"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
@@ -13,6 +15,14 @@ import (
 type Cache interface {
 	GetImages(resolution string) ([][]byte, error)
 	CacheImage(imageData []byte, imageName string) error
+}
+
+type ImageEntry struct {
+	Author string
+	Title  string
+	Link   string
+	Width  int
+	Height int
 }
 
 var ctx = context.Background()
@@ -33,18 +43,18 @@ func (r RedisCache) fetchImageEntryData(keys []string) (ImageEntry, error) {
 		return ImageEntry{}, err
 	}
 
-	imageWidth, imageHeight, err := ConvertResolutionFormString(imageData["dimensions"], "x")
+	imageWidth, imageHeight, err := utils.ConvertResolutionFormString(imageData["dimensions"], "x")
 
 	if err != nil {
 		return ImageEntry{}, err
 	}
 
 	return ImageEntry{
-		author: imageData["author"],
-		title:  imageData["title"],
-		link:   imageData["link"],
-		width:  imageWidth,
-		height: imageHeight,
+		Author: imageData["author"],
+		Title:  imageData["title"],
+		Link:   imageData["link"],
+		Width:  imageWidth,
+		Height: imageHeight,
 	}, nil
 }
 
@@ -67,7 +77,7 @@ func (r RedisCache) GetImage(width, height int, animal string) (ImageEntry, erro
 
 		matchingResolutions := []string{}
 		for _, storedResolution := range storedResolutions {
-			imageWidth, imageHeight, err := ConvertResolutionFormString(storedResolution, "x")
+			imageWidth, imageHeight, err := utils.ConvertResolutionFormString(storedResolution, "x")
 
 			if err != nil {
 				return ImageEntry{}, err
@@ -91,7 +101,7 @@ func (r RedisCache) hash(s string) uint32 {
 func (r RedisCache) SaveImage(width, height int, authorName, title, animal, imageLink string) error {
 	linkHash := strconv.Itoa(int(r.hash(imageLink)))
 	// the key looks like image:<link_hash>:1920x1080_fox_<detail>
-	_, err := r.db.HSet(ctx, fmt.Sprintf("image:%s:%dx%d-%s", linkHash, width, height, animal), map[string]interface{}{
+	_, err := r.db.HMSet(ctx, fmt.Sprintf("image:%s:%dx%d-%s", linkHash, width, height, animal), map[string]interface{}{
 		"author": authorName,
 		"title":  title,
 		"link":   imageLink,
@@ -120,9 +130,9 @@ func testRedisConnection(rdb *redis.Client) error {
 	return err
 }
 
-func NewRedisCache(cfg *Config) (*RedisCache, error) {
+func NewRedisCache(cfg *config.Config) (*RedisCache, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", cfg.RedisURL, cfg.RedisPort),
+		Addr:     cfg.RedisURL,
 		Password: cfg.RedisPassword,
 		DB:       cfg.RedisDatabase,
 	})

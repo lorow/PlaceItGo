@@ -1,4 +1,4 @@
-package internal
+package config
 
 import (
 	"fmt"
@@ -10,7 +10,6 @@ import (
 type Config struct {
 	RedisURL       string `env:"redis_server"`
 	RedisDatabase  int    `env:"redis_db"`
-	RedisPort      int    `env:"redis_port"`
 	RedisPassword  string `env:"redis_password"`
 	RedditUsername string `env:"reddit_username"`
 	RedditPassword string `env:"reddit_password"`
