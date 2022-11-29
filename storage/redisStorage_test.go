@@ -47,6 +47,63 @@ func Test_saving_image(t *testing.T) {
 	}
 }
 
+func Test_fetching_image_direct_key(t *testing.T) {
+	setup()
+	defer teardown()
+	// set the image first
+	redisCache.SaveImage(1920, 1080, "lorow", "testing_entry", "fox", "google.com")
+
+	image, err := redisCache.GetImage(1920, 1080, "fox")
+
+	if err != nil {
+		t.Errorf("Error while fetching image: %s", err)
+	} else {
+		if image.Author != "lorow" {
+			t.Errorf("Author doesn't match: %s %s", "lorow", image.Author)
+		}
+		if image.Title != "testing_entry" {
+			t.Errorf("Ttile doesn't match: %s %s", "testing_entry", image.Title)
+		}
+		if image.Link != "google.com" {
+			t.Errorf("Link doesn't match: %s %s", "google.com", image.Link)
+		}
+		if image.Width != 1920 {
+			t.Errorf("Width doesn't match: %d %d", 1920, image.Width)
+		}
+		if image.Height != 1080 {
+			t.Errorf("Height doesn't match: %d %d", 1080, image.Height)
+		}
+	}
+}
+
+func Test_fetching_image_similar_key(t *testing.T) {
+	setup()
+	defer teardown()
+
+	redisCache.SaveImage(1940, 1100, "lorow", "testing_entry", "fox", "google.com")
+	image, err := redisCache.GetImage(1920, 1080, "fox")
+
+	if err != nil {
+		t.Errorf("Error while fetching image: %s", err)
+	} else {
+		if image.Author != "lorow" {
+			t.Errorf("Author doesn't match: %s %s", "lorow", image.Author)
+		}
+		if image.Title != "testing_entry" {
+			t.Errorf("Ttile doesn't match: %s %s", "testing_entry", image.Title)
+		}
+		if image.Link != "google.com" {
+			t.Errorf("Link doesn't match: %s %s", "google.com", image.Link)
+		}
+		if image.Width != 1940 {
+			t.Errorf("Width doesn't match: %d %d", 1940, image.Width)
+		}
+		if image.Height != 1100 {
+			t.Errorf("Height doesn't match: %d %d", 1100, image.Height)
+		}
+	}
+}
+
 func mockRedis() *miniredis.Miniredis {
 	s, err := miniredis.Run()
 

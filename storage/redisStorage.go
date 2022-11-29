@@ -43,7 +43,7 @@ func (r RedisCache) fetchImageEntryData(keys []string) (ImageEntry, error) {
 		return ImageEntry{}, err
 	}
 
-	imageWidth, imageHeight, err := utils.ConvertResolutionFormString(imageData["dimensions"], "x")
+	imageWidth, imageHeight, err := utils.ConvertResolutionFormString(fmt.Sprintf("%sx%s", imageData["width"], imageData["height"]), "x")
 
 	if err != nil {
 		return ImageEntry{}, err
@@ -62,7 +62,7 @@ func (r RedisCache) GetImage(width, height int, animal string) (ImageEntry, erro
 
 	// todo, refactor it to be cleaner a bit
 	var cursor uint64
-	keys, _, err := r.db.Scan(ctx, cursor, fmt.Sprintf("image:*:%dx%d-%s*", width, height, animal), 10).Result()
+	keys, _, err := r.db.Scan(ctx, cursor, fmt.Sprintf("image:*:%dx%d-%s", width, height, animal), 10).Result()
 	if err != nil {
 		return ImageEntry{}, err
 	}
@@ -85,7 +85,12 @@ func (r RedisCache) GetImage(width, height int, animal string) (ImageEntry, erro
 			// we're looking for "similar"resolutions, as in bigger than what was asked for
 			// because we will be cropping them to size
 			if (imageWidth-width) >= 0 && (imageHeight-height) >= 0 && len(matchingResolutions) < 3 {
-				matchingResolutions = append(matchingResolutions, fmt.Sprintf("%d_%d", width, height))
+
+				keys, _, _ = r.db.Scan(ctx, cursor, fmt.Sprintf("image:*:%dx%d-%s", imageWidth, imageHeight, animal), 10).Result()
+
+				if len(keys) > 0 {
+					matchingResolutions = append(matchingResolutions, keys[0])
+				}
 			}
 		}
 		return r.fetchImageEntryData(matchingResolutions)
