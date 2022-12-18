@@ -22,7 +22,7 @@ func main() {
 	} else {
 		fmt.Println("Successfully connected to redis!")
 	}
-
+	// TODO refactor this later to a more generic service
 	imageService, err := reddit.NewRedditService(config, redisCache)
 	if err != nil {
 		panic(fmt.Sprintf("Could not start the reddit service %s", err))

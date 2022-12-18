@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"placeitgo/model"
 	"strconv"
 
 	"github.com/rs/zerolog/log"
@@ -11,7 +12,7 @@ import (
 )
 
 type ImageService interface {
-	GetImage(animal string, width, height int) ([]byte, error)
+	GetImage(animal string, width, height int) (model.ImageResponse, error)
 }
 
 type PlaceItGoHandler struct {
@@ -45,7 +46,7 @@ func (p PlaceItGoHandler) getImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Write(imageData)
+	w.Write(imageData.Data)
 }
 
 func StartServer(imageManager ImageService) error {

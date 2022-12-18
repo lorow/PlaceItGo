@@ -6,23 +6,17 @@ import (
 	"hash/fnv"
 	"math/rand"
 	"placeitgo/config"
+	"placeitgo/model"
 	"placeitgo/utils"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
 )
 
-type Cache interface {
-	GetImages(resolution string) ([][]byte, error)
-	CacheImage(imageData []byte, imageName string) error
-}
-
-type ImageEntry struct {
-	Author string
-	Title  string
-	Link   string
-	Width  int
-	Height int
+type Storage interface {
+	// TODO fix the missplaced parameters compared to ImageService
+	GetImage(width, height int, animal string) (model.ImageDBEntry, error)
+	SaveImage(width, height int, authorName, title, animal, imageLink string)
 }
 
 var ctx = context.Background()
@@ -31,25 +25,25 @@ type RedisCache struct {
 	db *redis.Client
 }
 
-func (r RedisCache) fetchImageEntryData(keys []string) (ImageEntry, error) {
+func (r RedisCache) fetchImageEntryData(keys []string) (model.ImageDBEntry, error) {
 	keysLen := len(keys)
 	if keysLen == 0 {
-		return ImageEntry{}, fmt.Errorf("couldn't find anything in cache")
+		return model.ImageDBEntry{}, fmt.Errorf("couldn't find anything in cache")
 	}
 
 	randomKey := keys[rand.Intn(keysLen)]
 	imageData, err := r.db.HGetAll(ctx, randomKey).Result()
 	if err != nil {
-		return ImageEntry{}, err
+		return model.ImageDBEntry{}, err
 	}
 
 	imageWidth, imageHeight, err := utils.ConvertResolutionFormString(fmt.Sprintf("%sx%s", imageData["width"], imageData["height"]), "x")
 
 	if err != nil {
-		return ImageEntry{}, err
+		return model.ImageDBEntry{}, err
 	}
 
-	return ImageEntry{
+	return model.ImageDBEntry{
 		Author: imageData["author"],
 		Title:  imageData["title"],
 		Link:   imageData["link"],
@@ -58,13 +52,13 @@ func (r RedisCache) fetchImageEntryData(keys []string) (ImageEntry, error) {
 	}, nil
 }
 
-func (r RedisCache) GetImage(width, height int, animal string) (ImageEntry, error) {
+func (r RedisCache) GetImage(width, height int, animal string) (model.ImageDBEntry, error) {
 
 	// todo, refactor it to be cleaner a bit
 	var cursor uint64
 	keys, _, err := r.db.Scan(ctx, cursor, fmt.Sprintf("image:*:%dx%d-%s", width, height, animal), 10).Result()
 	if err != nil {
-		return ImageEntry{}, err
+		return model.ImageDBEntry{}, err
 	}
 
 	if len(keys) > 0 {
@@ -72,7 +66,7 @@ func (r RedisCache) GetImage(width, height int, animal string) (ImageEntry, erro
 	} else {
 		storedResolutions, err := r.db.SMembers(ctx, fmt.Sprintf("%s_resolutions", animal)).Result()
 		if err != nil {
-			return ImageEntry{}, err
+			return model.ImageDBEntry{}, err
 		}
 
 		matchingResolutions := []string{}
@@ -80,7 +74,7 @@ func (r RedisCache) GetImage(width, height int, animal string) (ImageEntry, erro
 			imageWidth, imageHeight, err := utils.ConvertResolutionFormString(storedResolution, "x")
 
 			if err != nil {
-				return ImageEntry{}, err
+				return model.ImageDBEntry{}, err
 			}
 			// we're looking for "similar"resolutions, as in bigger than what was asked for
 			// because we will be cropping them to size
