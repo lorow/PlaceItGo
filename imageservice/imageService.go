@@ -67,3 +67,11 @@ func (i ImageHandler) GetImage(animal string, width, height int) (model.ImageRes
 func (i ImageHandler) fetchImage(entry model.ImageDBEntry) ([]byte, error) {
 	return []byte{}, nil
 }
+
+func NewImageService(storage storage.Storage, downloader ImageDownloader, processor ImageProcessor) ImageHandler {
+	return ImageHandler{
+		storage:    storage,
+		downloader: downloader,
+		processor:  processor,
+	}
+}

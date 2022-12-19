@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"placeitgo/api"
 	"placeitgo/config"
+	"placeitgo/imageservice"
 	"placeitgo/reddit"
 	"placeitgo/storage"
 
@@ -23,10 +24,12 @@ func main() {
 		fmt.Println("Successfully connected to redis!")
 	}
 	// TODO refactor this later to a more generic service
-	imageService, err := reddit.NewRedditService(config, redisCache)
+	redditDonwloader, err := reddit.NewRedditDownloader(config)
 	if err != nil {
 		panic(fmt.Sprintf("Could not start the reddit service %s", err))
 	}
+
+	imageService := imageservice.NewImageService(redisCache, redditDonwloader, nil)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	server_err := api.StartServer(imageService)

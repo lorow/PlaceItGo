@@ -16,7 +16,7 @@ import (
 type Storage interface {
 	// TODO fix the missplaced parameters compared to ImageService
 	GetImage(width, height int, animal string) (model.ImageDBEntry, error)
-	SaveImage(width, height int, authorName, title, animal, imageLink string)
+	SaveImage(width, height int, authorName, title, animal, imageLink string) error
 }
 
 var ctx = context.Background()
