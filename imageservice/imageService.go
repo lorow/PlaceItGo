@@ -1,6 +1,9 @@
 package imageservice
 
 import (
+	"fmt"
+	"io"
+	"net/http"
 	"placeitgo/model"
 	"placeitgo/storage"
 )
@@ -65,7 +68,22 @@ func (i ImageHandler) GetImage(animal string, width, height int) (model.ImageRes
 }
 
 func (i ImageHandler) fetchImage(entry model.ImageDBEntry) ([]byte, error) {
-	return []byte{}, nil
+	response, err := http.Get(entry.Link)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return []byte{}, fmt.Errorf("error getting image data: %s", err)
+	}
+
+	imageData, err := io.ReadAll(response.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return imageData, nil
 }
 
 func NewImageService(storage storage.Storage, downloader ImageDownloader, processor ImageProcessor) ImageHandler {
