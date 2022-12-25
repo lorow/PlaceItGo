@@ -2,6 +2,9 @@ package utils
 
 import (
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -24,4 +27,23 @@ func ConvertResolutionFormString(resolution, delimiter string) (int, int, error)
 	}
 
 	return width, height, nil
+}
+
+func FetchImageFromURL(link string) ([]byte, error) {
+	response, err := http.Get(link)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return []byte{}, fmt.Errorf("error getting image data: %s", err)
+	}
+
+	imageData, err := io.ReadAll(response.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return imageData, nil
 }
