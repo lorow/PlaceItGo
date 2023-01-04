@@ -1,14 +1,11 @@
 package reddit
 
 import (
-	"bytes"
 	"fmt"
-	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"placeitgo/config"
 	"placeitgo/model"
-	"placeitgo/utils"
 
 	"github.com/thecsw/mira"
 )
@@ -18,7 +15,6 @@ type RedditService struct {
 }
 
 func (r RedditService) GetImage(animal string, width, height int) (model.ImageDBEntry, error) {
-	// todo, add getting images from reddit
 	var desiredSubmision *mira.PostListingChild
 	var actualImageWidth int
 	var actualImageHeight int
@@ -31,28 +27,26 @@ func (r RedditService) GetImage(animal string, width, height int) (model.ImageDB
 	}
 
 	for _, submission := range submissions {
-		imageLink := submission.GetText()
-		imageData, err := utils.FetchImageFromURL(imageLink)
-		if err != nil {
+		if !submission.Data.Preview.Enabled {
 			continue
 		}
 
-		downloadedImageConfig, _, err := image.DecodeConfig(bytes.NewReader(imageData))
-		if err != nil {
-			continue
-		}
-
-		if downloadedImageConfig.Width >= width && downloadedImageConfig.Height >= height {
-			actualImageWidth = downloadedImageConfig.Width
-			actualImageHeight = downloadedImageConfig.Height
+		if int(submission.Data.Preview.Images[0].Source.Width) >= width && int(submission.Data.Preview.Images[0].Source.Height) >= height {
+			actualImageWidth = int(submission.Data.Preview.Images[0].Source.Width)
+			actualImageHeight = int(submission.Data.Preview.Images[0].Source.Height)
 			desiredSubmision = &submission
+			break
 		}
+	}
+
+	if desiredSubmision == nil {
+		return model.ImageDBEntry{}, fmt.Errorf("could not find desired placeholder iamge for %s %dx%d", animal, width, height)
 	}
 
 	return model.ImageDBEntry{
 		Author: desiredSubmision.GetAuthor(),
 		Title:  desiredSubmision.GetTitle(),
-		Link:   desiredSubmision.GetText(),
+		Link:   desiredSubmision.Data.Url,
 		Width:  actualImageWidth,
 		Height: actualImageHeight,
 	}, nil

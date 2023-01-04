@@ -25,6 +25,8 @@ type ImageHandler struct {
 }
 
 func (i ImageHandler) GetImage(animal string, width, height int) (model.ImageResponse, error) {
+	var downloadedImageData []byte
+
 	imageEntry, err := i.storage.GetImage(width, height, animal)
 	if err == nil {
 		downloadedImageData, err := i.fetchImage(imageEntry)
@@ -46,8 +48,7 @@ func (i ImageHandler) GetImage(animal string, width, height int) (model.ImageRes
 	if err != nil {
 		return model.ImageResponse{}, err
 	}
-
-	downloadedImageData, err := i.fetchImage(imageEntry)
+	downloadedImageData, err = i.fetchImage(imageEntry)
 	if err != nil {
 		return model.ImageResponse{}, err
 	}

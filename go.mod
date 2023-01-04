@@ -8,6 +8,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/rs/zerolog v1.27.0
 	github.com/thecsw/mira v1.1.2
+	golang.org/x/image v0.2.0
 )
 
 require (

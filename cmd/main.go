@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"placeitgo/api"
 	"placeitgo/config"
+	"placeitgo/imageprocessor"
 	"placeitgo/imageservice"
 	"placeitgo/reddit"
 	"placeitgo/storage"
@@ -29,7 +30,9 @@ func main() {
 		panic(fmt.Sprintf("Could not start the reddit service %s", err))
 	}
 
-	imageService := imageservice.NewImageService(redisCache, redditDonwloader, nil)
+	imageProcessor := imageprocessor.GetNewImageProcesor()
+
+	imageService := imageservice.NewImageService(redisCache, redditDonwloader, imageProcessor)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	server_err := api.StartServer(imageService)
