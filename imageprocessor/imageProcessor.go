@@ -4,12 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/draw"
-	"image/png"
+	"image/color"
 
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
+	"gopkg.in/fogleman/gg.v1"
 )
 
 type ImageProcessor struct {
@@ -21,28 +18,25 @@ func (i ImageProcessor) ProcessImageEntry(author, title string, data []byte) ([]
 		return []byte{}, err
 	}
 
-	// first, we create a mutable canvas containing the base image and is also a bit larger
-	// so that we can fit in the text
 	bounds := source.Bounds()
-	percent_of_the_bounds := float32(bounds.Dy()) * (float32(3) / float32(100))
+	percent_of_the_bounds := float64(bounds.Dy()) * (float64(3) / float64(100))
 	rgba_canvas := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()+int(percent_of_the_bounds)))
-	// then fill it with black color and copy the downloaded image onto it
-	draw.Draw(rgba_canvas, rgba_canvas.Bounds(), image.NewUniform(image.Black), image.Point{}, draw.Src)
-	draw.Draw(rgba_canvas, source.Bounds(), source, bounds.Min, draw.Src)
-	// and then draw the text
-	point := fixed.Point26_6{X: fixed.I(0), Y: fixed.I(bounds.Dy() + int(percent_of_the_bounds/2))}
 
-	drawer := &font.Drawer{
-		Dst:  rgba_canvas,
-		Src:  image.NewUniform(image.White),
-		Face: basicfont.Face7x13,
-		Dot:  point,
+	gg_context := gg.NewContextForRGBA(rgba_canvas)
+	gg_context.DrawImage(source, 0, 0)
+	gg_context.DrawRectangle(float64(source.Bounds().Min.X), float64(source.Bounds().Max.Y), float64(bounds.Dx()), percent_of_the_bounds)
+	gg_context.SetColor(color.Black)
+	gg_context.Fill()
+
+	if err != nil {
+		return []byte{}, err
 	}
-
-	drawer.DrawString(fmt.Sprintf("%s - %s", author, title))
+	gg_context.LoadFontFace("./cmd/Roboto-Light.ttf", 36)
+	gg_context.SetColor(color.White)
+	gg_context.DrawString(fmt.Sprintf("%s - %s", author, title), 0, float64(bounds.Dy())+(percent_of_the_bounds/2)+gg_context.FontHeight()/2)
 
 	buffer := new(bytes.Buffer)
-	err = png.Encode(buffer, rgba_canvas)
+	err = gg_context.EncodePNG(buffer)
 	return buffer.Bytes(), err
 }
 
