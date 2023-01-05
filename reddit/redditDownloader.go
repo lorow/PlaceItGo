@@ -14,43 +14,44 @@ type RedditService struct {
 	bot *mira.Reddit
 }
 
-func (r RedditService) GetImage(animal string, width, height int) (model.ImageDBEntry, error) {
-	var desiredSubmision *mira.PostListingChild
-	var actualImageWidth int
-	var actualImageHeight int
+func (r RedditService) GetImages(animal string, width, height int) ([]model.ImageDBEntry, error) {
+	var matchingSubmissions []model.ImageDBEntry
 
 	// todo add max tries
 	submissions, err := r.bot.GetSubredditPosts(animal, "hot", "all", 10)
 
 	if err != nil {
-		return model.ImageDBEntry{}, err
+		return []model.ImageDBEntry{}, err
 	}
 
 	for _, submission := range submissions {
 		if !submission.Data.Preview.Enabled {
 			continue
 		}
+		submissionWidth := submission.Data.Preview.Images[0].Source.Width
+		submissionHeight := submission.Data.Preview.Images[0].Source.Height
 
-		if int(submission.Data.Preview.Images[0].Source.Width) >= width && int(submission.Data.Preview.Images[0].Source.Height) >= height {
-			actualImageWidth = int(submission.Data.Preview.Images[0].Source.Width)
-			actualImageHeight = int(submission.Data.Preview.Images[0].Source.Height)
-			desiredSubmision = &submission
-			break
+		matchingWidth := bool(int(submissionWidth)-width > 0 && float32(int(submissionWidth)-width) <= float32(width)*0.3)
+		matchingHeight := bool(int(submissionHeight)-height > 0 && float32(int(submissionHeight)-height) <= float32(height)*0.3)
+
+		if matchingWidth && matchingHeight {
+			matchingSubmission := model.ImageDBEntry{
+				Author: submission.GetAuthor(),
+				Title:  submission.GetTitle(),
+				Link:   submission.Data.Url,
+				Width:  int(submissionWidth),
+				Height: int(submissionHeight),
+			}
+
+			matchingSubmissions = append(matchingSubmissions, matchingSubmission)
 		}
 	}
 
-	if desiredSubmision == nil {
-		return model.ImageDBEntry{}, fmt.Errorf("could not find desired placeholder iamge for %s %dx%d", animal, width, height)
+	if matchingSubmissions == nil {
+		return []model.ImageDBEntry{}, fmt.Errorf("could not find desired placeholder iamge for %s %dx%d", animal, width, height)
 	}
 
-	return model.ImageDBEntry{
-		Author: desiredSubmision.GetAuthor(),
-		Title:  desiredSubmision.GetTitle(),
-		Link:   desiredSubmision.Data.Url,
-		Width:  actualImageWidth,
-		Height: actualImageHeight,
-	}, nil
-
+	return matchingSubmissions, nil
 }
 
 func NewRedditDownloader(config *config.Config) (*RedditService, error) {

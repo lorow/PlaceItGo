@@ -2,6 +2,7 @@ package storage
 
 import (
 	"placeitgo/config"
+	"placeitgo/model"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -28,7 +29,17 @@ func Test_saving_image(t *testing.T) {
 	setup()
 	defer teardown()
 
-	err := redisCache.SaveImage(1920, 1080, "lorow", "testing_entry", "fox", "google.com")
+	entries := []model.ImageDBEntry{
+		{
+			Author: "lorow",
+			Title:  "testing_entry",
+			Link:   "google.com",
+			Width:  1920,
+			Height: 1080,
+		},
+	}
+
+	err := redisCache.SaveImageEntries(entries, "fox")
 	if err != nil {
 		t.Errorf("saving image data returned error: %s", err)
 	}
@@ -51,7 +62,17 @@ func Test_fetching_image_direct_key(t *testing.T) {
 	setup()
 	defer teardown()
 	// set the image first
-	redisCache.SaveImage(1920, 1080, "lorow", "testing_entry", "fox", "google.com")
+
+	entries := []model.ImageDBEntry{
+		{
+			Author: "lorow",
+			Title:  "testing_entry",
+			Link:   "google.com",
+			Width:  1920,
+			Height: 1080,
+		},
+	}
+	redisCache.SaveImageEntries(entries, "fox")
 
 	image, err := redisCache.GetImage(1920, 1080, "fox")
 
@@ -80,7 +101,16 @@ func Test_fetching_image_similar_key(t *testing.T) {
 	setup()
 	defer teardown()
 
-	redisCache.SaveImage(1940, 1100, "lorow", "testing_entry", "fox", "google.com")
+	entries := []model.ImageDBEntry{
+		{
+			Author: "lorow",
+			Title:  "testing_entry",
+			Link:   "google.com",
+			Width:  1940,
+			Height: 1100,
+		},
+	}
+	redisCache.SaveImageEntries(entries, "fox")
 	image, err := redisCache.GetImage(1920, 1080, "fox")
 
 	if err != nil {

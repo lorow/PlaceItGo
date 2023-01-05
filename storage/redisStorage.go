@@ -16,7 +16,7 @@ import (
 type Storage interface {
 	// TODO fix the missplaced parameters compared to ImageService
 	GetImage(width, height int, animal string) (model.ImageDBEntry, error)
-	SaveImage(width, height int, authorName, title, animal, imageLink string) error
+	SaveImageEntries(entries []model.ImageDBEntry, animal string) error
 }
 
 var ctx = context.Background()
@@ -76,10 +76,11 @@ func (r RedisCache) GetImage(width, height int, animal string) (model.ImageDBEnt
 			if err != nil {
 				return model.ImageDBEntry{}, err
 			}
-			// we're looking for "similar"resolutions, as in bigger than what was asked for
-			// because we will be cropping them to size
-			if (imageWidth-width) >= 0 && (imageHeight-height) >= 0 && len(matchingResolutions) < 3 {
-
+			// we're looking for "similar" resolutions, as in bigger than what was asked for,
+			// while still not exceeding a certain threshold, because we will be cropping them to size
+			matchingWidth := bool(imageWidth-width > 0 && float32(imageWidth-width) <= float32(imageWidth)*0.3)
+			matchingHeight := bool(imageHeight-height > 0 && float32(imageHeight-height) <= float32(imageHeight)*0.3)
+			if matchingWidth && matchingHeight && len(matchingResolutions) < 3 {
 				keys, _, _ = r.db.Scan(ctx, cursor, fmt.Sprintf("image:*:%dx%d-%s", imageWidth, imageHeight, animal), 10).Result()
 
 				if len(keys) > 0 {
@@ -97,24 +98,26 @@ func (r RedisCache) hash(s string) uint32 {
 	return h.Sum32()
 }
 
-func (r RedisCache) SaveImage(width, height int, authorName, title, animal, imageLink string) error {
-	linkHash := strconv.Itoa(int(r.hash(imageLink)))
-	// the key looks like image:<link_hash>:1920x1080_fox_<detail>
-	_, err := r.db.HMSet(ctx, fmt.Sprintf("image:%s:%dx%d-%s", linkHash, width, height, animal), map[string]interface{}{
-		"author": authorName,
-		"title":  title,
-		"link":   imageLink,
-		"width":  width,
-		"height": height,
-	}).Result()
+func (r RedisCache) SaveImageEntries(entries []model.ImageDBEntry, animal string) error {
+	for _, imageEntry := range entries {
+		linkHash := strconv.Itoa(int(r.hash(imageEntry.Link)))
+		// the key looks like image:<link_hash>:1920x1080_fox_<detail>
+		_, err := r.db.HMSet(ctx, fmt.Sprintf("image:%s:%dx%d-%s", linkHash, imageEntry.Width, imageEntry.Height, animal), map[string]interface{}{
+			"author": imageEntry.Author,
+			"title":  imageEntry.Title,
+			"link":   imageEntry.Link,
+			"width":  imageEntry.Width,
+			"height": imageEntry.Height,
+		}).Result()
 
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	_, err = r.db.SAdd(ctx, fmt.Sprintf("%s_resolutions", animal), fmt.Sprintf("%dx%d", width, height)).Result()
-	if err != nil {
-		return err
+		_, err = r.db.SAdd(ctx, fmt.Sprintf("%s_resolutions", animal), fmt.Sprintf("%dx%d", imageEntry.Width, imageEntry.Height)).Result()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

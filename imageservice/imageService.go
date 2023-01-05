@@ -1,13 +1,15 @@
 package imageservice
 
 import (
+	"math/rand"
 	"placeitgo/model"
 	"placeitgo/storage"
 	"placeitgo/utils"
+	"time"
 )
 
 type ImageDownloader interface {
-	GetImage(animal string, width, height int) (model.ImageDBEntry, error)
+	GetImages(animal string, width, height int) ([]model.ImageDBEntry, error)
 }
 
 type ImageService interface {
@@ -26,7 +28,10 @@ type ImageHandler struct {
 
 func (i ImageHandler) GetImage(animal string, width, height int) (model.ImageResponse, error) {
 	var downloadedImageData []byte
-
+	// todos
+	// add cropping
+	// add additional passes for reddit when nothing had been found
+	// add tests
 	imageEntry, err := i.storage.GetImage(width, height, animal)
 	if err == nil {
 		downloadedImageData, err := i.fetchImage(imageEntry)
@@ -44,17 +49,21 @@ func (i ImageHandler) GetImage(animal string, width, height int) (model.ImageRes
 		}, nil
 	}
 
-	imageEntry, err = i.downloader.GetImage(animal, width, height)
-	if err != nil {
-		return model.ImageResponse{}, err
-	}
-	downloadedImageData, err = i.fetchImage(imageEntry)
+	imageEntries, err := i.downloader.GetImages(animal, width, height)
 	if err != nil {
 		return model.ImageResponse{}, err
 	}
 
-	// before anything, store the fresh image
-	i.storage.SaveImage(imageEntry.Height, imageEntry.Width, imageEntry.Author, imageEntry.Title, animal, imageEntry.Link)
+	// before anything, store the image entries
+	i.storage.SaveImageEntries(imageEntries, animal)
+
+	// then select a random entry and work with it
+	rand.Seed(time.Now().Unix())
+	imageEntry = imageEntries[rand.Intn(len(imageEntries))]
+	downloadedImageData, err = i.fetchImage(imageEntry)
+	if err != nil {
+		return model.ImageResponse{}, err
+	}
 
 	processedImage, err := i.processor.ProcessImageEntry(imageEntry.Author, imageEntry.Title, downloadedImageData)
 	if err != nil {
