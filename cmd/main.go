@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	config, config_err := config.GetConfig()
-	if config_err != nil {
+	config, configErr := config.GetConfig()
+	if configErr != nil {
 		fmt.Println("Couldn't load config")
 	}
 
@@ -25,19 +25,19 @@ func main() {
 		fmt.Println("Successfully connected to redis!")
 	}
 	// TODO refactor this later to a more generic service
-	redditDonwloader, err := reddit.NewRedditDownloader(config)
+	redditDownloader, err := reddit.NewRedditDownloader(config)
 	if err != nil {
 		panic(fmt.Sprintf("Could not start the reddit service %s", err))
 	}
 
-	imageProcessor := imageprocessor.GetNewImageProcesor()
+	imageProcessor := imageprocessor.GetNewImageProcessor()
 
-	imageService := imageservice.NewImageService(redisCache, redditDonwloader, imageProcessor)
+	imageService := imageservice.NewImageService(redisCache, redditDownloader, imageProcessor)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	server_err := api.StartServer(imageService)
+	serverErr := api.StartServer(imageService)
 
-	if server_err != nil {
+	if serverErr != nil {
 		panic("couldn't start the API server up!")
 	}
 }

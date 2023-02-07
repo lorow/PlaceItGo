@@ -19,27 +19,27 @@ func (i ImageProcessor) ProcessImageEntry(author, title string, data []byte) ([]
 	}
 
 	bounds := source.Bounds()
-	percent_of_the_bounds := float64(bounds.Dy()) * (float64(3) / float64(100))
-	rgba_canvas := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()+int(percent_of_the_bounds)))
+	percentOfTheBounds := float64(bounds.Dy()) * (float64(3) / float64(100))
+	rgbaCanvas := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()+int(percentOfTheBounds)))
 
-	gg_context := gg.NewContextForRGBA(rgba_canvas)
-	gg_context.DrawImage(source, 0, 0)
-	gg_context.DrawRectangle(float64(source.Bounds().Min.X), float64(source.Bounds().Max.Y), float64(bounds.Dx()), percent_of_the_bounds)
-	gg_context.SetColor(color.Black)
-	gg_context.Fill()
+	ggContext := gg.NewContextForRGBA(rgbaCanvas)
+	ggContext.DrawImage(source, 0, 0)
+	ggContext.DrawRectangle(float64(source.Bounds().Min.X), float64(source.Bounds().Max.Y), float64(bounds.Dx()), percentOfTheBounds)
+	ggContext.SetColor(color.Black)
+	ggContext.Fill()
 
 	if err != nil {
 		return []byte{}, err
 	}
-	gg_context.LoadFontFace("./cmd/Roboto-Light.ttf", 36)
-	gg_context.SetColor(color.White)
-	gg_context.DrawString(fmt.Sprintf("%s - %s", author, title), 0, float64(bounds.Dy())+(percent_of_the_bounds/2)+gg_context.FontHeight()/2)
+	ggContext.LoadFontFace("./cmd/Roboto-Light.ttf", 36)
+	ggContext.SetColor(color.White)
+	ggContext.DrawString(fmt.Sprintf("%s - %s", author, title), 0, float64(bounds.Dy())+(percentOfTheBounds/2)+ggContext.FontHeight()/2)
 
 	buffer := new(bytes.Buffer)
-	err = gg_context.EncodePNG(buffer)
+	err = ggContext.EncodePNG(buffer)
 	return buffer.Bytes(), err
 }
 
-func GetNewImageProcesor() ImageProcessor {
+func GetNewImageProcessor() ImageProcessor {
 	return ImageProcessor{}
 }
