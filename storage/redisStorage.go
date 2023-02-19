@@ -14,8 +14,7 @@ import (
 )
 
 type Storage interface {
-	// TODO fix the missplaced parameters compared to ImageService
-	GetImage(width, height int, animal string) (model.ImageDBEntry, error)
+	GetImage(animal string, width, height int) (model.ImageDBEntry, error)
 	SaveImageEntries(entries []model.ImageDBEntry, animal string) error
 }
 
@@ -52,7 +51,7 @@ func (r RedisCache) fetchImageEntryData(keys []string) (model.ImageDBEntry, erro
 	}, nil
 }
 
-func (r RedisCache) GetImage(width, height int, animal string) (model.ImageDBEntry, error) {
+func (r RedisCache) GetImage(animal string, width, height int) (model.ImageDBEntry, error) {
 
 	// todo, refactor it to be cleaner a bit
 	var cursor uint64

@@ -14,25 +14,52 @@ type RedditService struct {
 	bot *mira.Reddit
 }
 
+// GetImages Downloads all the matching images from reddit,
+// whose dimensions are bigger or matching the ones provided by the user.
+// Only up to three most similar in terms of resolution
 func (r RedditService) GetImages(animal string, width, height int) ([]model.ImageDBEntry, error) {
+	var maxRetries = 3
 	var matchingSubmissions []model.ImageDBEntry
+	var lastSubmission *mira.PostListingChild = nil
 
-	// todo add max tries
 	submissions, err := r.bot.GetSubredditPosts(animal, "hot", "all", 10)
-
 	if err != nil {
 		return []model.ImageDBEntry{}, err
 	}
 
-	for _, submission := range submissions {
+	for i := 0; i < maxRetries; i++ {
+		if lastSubmission != nil {
+			submissions, err = r.bot.GetSubredditPostsAfter(animal, lastSubmission.After, 10)
+			if err != nil {
+				return []model.ImageDBEntry{}, err
+			}
+		}
+		r.processSubmissions(&submissions, &matchingSubmissions, width, height)
+
+		if len(matchingSubmissions) < 3 {
+			lastSubmission = &submissions[len(submissions)-1]
+		} else {
+			lastSubmission = nil
+		}
+	}
+
+	if matchingSubmissions == nil {
+		return []model.ImageDBEntry{}, fmt.Errorf("could not find desired placeholder image for %s %dx%d", animal, width, height)
+	}
+
+	return r.filterMatchingSubmissions(&matchingSubmissions), nil
+}
+
+func (r RedditService) processSubmissions(submissions *[]mira.PostListingChild, matchingSubmissions *[]model.ImageDBEntry, width, height int) {
+	for _, submission := range *submissions {
 		if !submission.Data.Preview.Enabled {
 			continue
 		}
 		submissionWidth := submission.Data.Preview.Images[0].Source.Width
 		submissionHeight := submission.Data.Preview.Images[0].Source.Height
 
-		matchingWidth := bool(int(submissionWidth)-width > 0 && float32(int(submissionWidth)-width) <= float32(width)*0.3)
-		matchingHeight := bool(int(submissionHeight)-height > 0 && float32(int(submissionHeight)-height) <= float32(height)*0.3)
+		matchingWidth := bool(int(submissionWidth)-width >= 0)
+		matchingHeight := bool(int(submissionHeight)-height >= 0)
 
 		if matchingWidth && matchingHeight {
 			matchingSubmission := model.ImageDBEntry{
@@ -43,15 +70,13 @@ func (r RedditService) GetImages(animal string, width, height int) ([]model.Imag
 				Height: int(submissionHeight),
 			}
 
-			matchingSubmissions = append(matchingSubmissions, matchingSubmission)
+			*matchingSubmissions = append(*matchingSubmissions, matchingSubmission)
 		}
 	}
+}
 
-	if matchingSubmissions == nil {
-		return []model.ImageDBEntry{}, fmt.Errorf("could not find desired placeholder iamge for %s %dx%d", animal, width, height)
-	}
-
-	return matchingSubmissions, nil
+func (r RedditService) filterMatchingSubmissions(matchingSubmissions *[]model.ImageDBEntry) []model.ImageDBEntry {
+	return []model.ImageDBEntry{}
 }
 
 func NewRedditDownloader(config *config.Config) (*RedditService, error) {

@@ -30,9 +30,8 @@ func (i ImageHandler) GetImage(animal string, width, height int) (model.ImageRes
 	var downloadedImageData []byte
 	// todos
 	// add cropping
-	// add additional passes for reddit when nothing had been found
 	// add tests
-	imageEntry, err := i.storage.GetImage(width, height, animal)
+	imageEntry, err := i.storage.GetImage(animal, width, height)
 	if err == nil {
 		downloadedImageData, err := i.fetchImage(imageEntry)
 		if err != nil {

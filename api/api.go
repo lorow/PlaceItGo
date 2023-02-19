@@ -26,13 +26,13 @@ func (p PlaceItGoHandler) serveIndex(w http.ResponseWriter, r *http.Request) {
 func (p PlaceItGoHandler) getImage(w http.ResponseWriter, r *http.Request) {
 
 	animal := chi.URLParam(r, "animal")
-	width_str := chi.URLParam(r, "width")
-	height_str := chi.URLParam(r, "height")
+	widthStr := chi.URLParam(r, "width")
+	heightStr := chi.URLParam(r, "height")
 
-	width, width_err := strconv.Atoi(width_str)
-	height, height_err := strconv.Atoi(height_str)
+	width, widthErr := strconv.Atoi(widthStr)
+	height, heightErr := strconv.Atoi(heightStr)
 
-	if width_err != nil || height_err != nil {
+	if widthErr != nil || heightErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -41,7 +41,7 @@ func (p PlaceItGoHandler) getImage(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Error().Msgf("Something went wrong while retrieving the image: %s", err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
