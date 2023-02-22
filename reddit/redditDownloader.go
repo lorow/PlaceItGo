@@ -2,22 +2,22 @@ package reddit
 
 import (
 	"fmt"
+	"github.com/thecsw/mira"
 	_ "image/jpeg"
 	_ "image/png"
 	"placeitgo/config"
 	"placeitgo/model"
-
-	"github.com/thecsw/mira"
+	"sort"
 )
 
-type RedditService struct {
+type Service struct {
 	bot *mira.Reddit
 }
 
 // GetImages Downloads all the matching images from reddit,
 // whose dimensions are bigger or matching the ones provided by the user.
 // Only up to three most similar in terms of resolution
-func (r RedditService) GetImages(animal string, width, height int) ([]model.ImageDBEntry, error) {
+func (r Service) GetImages(animal string, width, height int) ([]model.ImageDBEntry, error) {
 	var maxRetries = 3
 	var matchingSubmissions []model.ImageDBEntry
 	var lastSubmission *mira.PostListingChild = nil
@@ -47,10 +47,10 @@ func (r RedditService) GetImages(animal string, width, height int) ([]model.Imag
 		return []model.ImageDBEntry{}, fmt.Errorf("could not find desired placeholder image for %s %dx%d", animal, width, height)
 	}
 
-	return r.filterMatchingSubmissions(&matchingSubmissions), nil
+	return r.filterMatchingSubmissions(width, height, matchingSubmissions), nil
 }
 
-func (r RedditService) processSubmissions(submissions *[]mira.PostListingChild, matchingSubmissions *[]model.ImageDBEntry, width, height int) {
+func (r Service) processSubmissions(submissions *[]mira.PostListingChild, matchingSubmissions *[]model.ImageDBEntry, width, height int) {
 	for _, submission := range *submissions {
 		if !submission.Data.Preview.Enabled {
 			continue
@@ -69,17 +69,27 @@ func (r RedditService) processSubmissions(submissions *[]mira.PostListingChild, 
 				Width:  int(submissionWidth),
 				Height: int(submissionHeight),
 			}
-
 			*matchingSubmissions = append(*matchingSubmissions, matchingSubmission)
 		}
 	}
 }
 
-func (r RedditService) filterMatchingSubmissions(matchingSubmissions *[]model.ImageDBEntry) []model.ImageDBEntry {
-	return []model.ImageDBEntry{}
+// filterMatchingSubmissions filters the matching submissions
+// so that the only left are the three most closely matching ones
+func (r Service) filterMatchingSubmissions(width, height int, matchingSubmissions []model.ImageDBEntry) []model.ImageDBEntry {
+	desiredDimensions := width * height
+
+	sort.Slice(matchingSubmissions, func(i, j int) bool {
+		previousDimensions := matchingSubmissions[i].Width*matchingSubmissions[i].Height - desiredDimensions
+		currentDimensions := matchingSubmissions[j].Width*matchingSubmissions[j].Height - desiredDimensions
+
+		return currentDimensions < previousDimensions
+	})
+
+	return matchingSubmissions[:2]
 }
 
-func NewRedditDownloader(config *config.Config) (*RedditService, error) {
+func NewRedditDownloader(config *config.Config) (*Service, error) {
 	r, err := mira.Init(mira.Credentials{
 		ClientId:     config.RedditAppID,
 		ClientSecret: config.RedditSecret,
@@ -92,5 +102,5 @@ func NewRedditDownloader(config *config.Config) (*RedditService, error) {
 		panic(fmt.Sprintf("something went wrong while starting reddit bot up - %s", err))
 	}
 
-	return &RedditService{bot: r}, nil
+	return &Service{bot: r}, nil
 }
